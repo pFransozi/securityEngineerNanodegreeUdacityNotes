@@ -134,3 +134,63 @@ In general, **policies and standards are considered mandatory**. **Procedures an
 **To think about**: Why security strategy is important? Why isn't it enough to just solve security problems with tools or proper design? **Security strategy is important because it is a strategy, that is, we plan and design security criteria that are needed in our organization.** In this way, **we reduce unforeseen situations and improvised solutions**. I think the four steps (policy, standards, procedure, guideline) are very useful to establish security strategies. After that, **it is important communicate and educate the users about the strategies**.
 
 **To think about**: many users are not following secure practices. Design a strategy for solving these systemic issues. Policy: high level requirements for passwords, security level to save password. Standards: don't use dictionary words as passwords, instead to mix syllables of the words and create a new one with at least 10 characters. Don't write passwords on pieces of paper and don't share passwords, instead use a password manager and keep it safe. Procedures: how to define a passwords: choose five words, for instance, mythology, statistic, avocado, river, moon. Then, based on them, make a new word at least 10 characters: mystavrimo. It is recommended change the case of some letters, for instance: mYstavRimo. And add some special character: !mYstav%Rimo. Use a password manager like Google Password Manager. Guidelines: in an inconstant periodicity, select another five words and change the password. A few strategies: Create a password policy based on industry best practices.; Create an education or awareness campaign. Inform users of the new policy; Work with IT teams to enforce adherence based on the technical capabilities of the authentication system (i.e. forcing strong passwords, rotation, etc); Provide tools to enable users to comply with the requirements. For example, providing a secure password vault option can obviate the need for users to write passwords down or store via non-secure methods (text files); Conduct periodic audits to ensure compliance.
+
+### Practical Cryptography
+
+* **Big Picture for developing your intuition about cryptography**: **Encryption is the foundation for the trust** we have in digital systems. Without this foundation, nearly all of what do with computers wouldn't be possible.
+
+* **encryption**: process of scrambling information so that it can only be read by someone with the ability to decrypt the information. **This is a two way process (encrypt and decrypt)**. The **cipher** (encryption key) is the procedure one must follow in order **to convert the information from plain-text to cipher-text**. The main aspect is that encryption is reversible, and it distinct encryption from hashing.
+    * **symmetric encryption**: **one key, which is used both encrypting and decrypting**. In this case we have **a private key cryptography**. **Less overhead, data storage**
+    * **asymmetric encryption**: two keys, but one is used for encrypting and a different one is used for decryption. In this case **we have a public key cryptograph**. **Strong form of encryption, digital signatures, PKI**
+* **hashing**: process of taking any input and converting it **into a fixed-length output**. Therefore, **hashing is irreversible**, even it is technically possible to reverse, but it really isn’t practically feasible. **A few characteristics about hashing**: **one way (irreversible)**, **output is a fixed-length**, **hash value is 100% unique to the input**. Hashing to store passwords: **we don’t use encryption to store password because of the risk of decryption (all you need is the key). This is a big risk**.
+
+* **salt**: adding a unique value to the beginning or end of a value you intend to hash.
+* **rainbow table**: it is **a precomputed database** of hash values and their corresponding plain-text passwords. **NIST SP 800-175B Rev.1**
+
+**To think about**: **What is the proper ay of storing passwords**? It's important to make sure you're using the proper encryption strategy! **Hashing is the correct form since it is irreversible**. Encrypted secrets mean there is a method to reverse the encryption thus giving anyone with access to the key access to the plain-text secret. This includes external malicious actors who get access to the server, but also internal users who have access to the key. **Salting the hash prevents dictionary or rainbow table attacks and is the preferred method of storing secrets**. **You use Symmetric when speed is a concern**. Common case: storing data at rest, such as financial data or PII. You use Asymmetric when security is more important than speed. Common case: digital signatures.
+
+### Signing, certificates, and PKI
+
+* **signing**: **Ensures that the contents of a message has not been altered in transit**.
+* **certificates**: a certificate is digital file that contains a public key along with other information that proves identity and ownership of that key.
+
+![Big Picture](./images/bigPicture-SigningVerification.png)
+
+* public key infrastructure (PKI)
+    * certificate authority (ca): trusted third party that issues certificates
+    * verification authority (va): verifies ownership of the certificates
+    * registration authority (ra): verifies that the party requesting a certificate is legitimate
+
+![Big Picture](./images/bitPictureCA.png)
+
+There are **a number of common issues associated with PKI**. Obviously, writing down a key is bad, but due to the length, it is not practical to write keys down so this practice isn't common.
+
+* **key Rotation**: unlike certificates, **keys do not have an expiration date**. **Without that forcing function, you must change keys regularly**. This prevents someone from stealing the key and creating their own certificate to circumvent protections.
+* **using outdated protocols**: **there have been several iterations of secure protocols**. As **vulnerabilities are found in these protocols**, it is important to update them accordingly.
+* **key Storage**: **store keys in a secure centralized solution such as Vault**. This will provide protection and auditing for users who access the keys.
+* **human error**: **misconfiguration or improper handling of certificates and keys can cause widespread issues**.
+* **insufficient key length**: **can be vulnerable to brute force attack**.
+
+* We use encryption in communication to protect the **confidentiality and integrity** of our messages.
+
+### TLS/SSL
+
+*Widely used protocol for establishing encrypted communication between systems.
+    * **Secure Socket Layer (SSL)**: encrypt communications.
+    * **Transport Layer Security (TLS)**: successor to SSL and currently the standard for encrypted communications. PKI is what makes the TLS process possible (TLS requires trust, PKI creates trust)
+
+TLS
+1. First, the client sends an unencrypted message to the server requesting an encrypted session.
+1. The server responds by sending its certificate, which (as we learned earlier) contains its public key.
+1. The client verifies the certificate
+1. The client generates a ‘pre-master’ key
+1. The client uses the public key from the certificate to encrypt the ‘pre-master’ key and then sends it to the server.
+1. The server (using its private key) decrypts the premaster key
+1. Both the client and the server use the premaster key to create a shared secret key
+1. The client sends a message to the server which is encrypted by the shared secret key
+1. The server decrypts the message using the shared secret key and verifies the message.
+1. The server then sends back a message encrypted with the shared secret key to confirm everything is okay.
+1. We have now established a secure session and can exchange messages encrypted using a single, shared key.
+
+**To think about**: SSL Striping is the process of forcing a connection to use HTTP instead of HTTP/S. This enables an attacker to sniff traffic (MitM) and view all communication in plaintext. A possible prevention technique would be to enable HSTS.
+
