@@ -1,0 +1,156 @@
+# Security Engineer
+
+## Authentication
+
+**Authentication is a strong means for implementing system level security**, and it is generally a first security layer. Though it may sound like an easy service to setup and build, it is actually quite complex and also opens up doors for additional security challenges. 
+
+Basically, authentication should:
+
+1. follow the Principle of Least Privilege
+1. Not impact day to day business
+1. be coupled with password best practices
+
+**To think about**: Why hash passwords? **Hashing is a one way process**. It **ensures** that the **plain text password can never be recovered even if the hash is stolen or revealed from the computer**. This makes it easy to manage password storage and retrieval. this is also one of the major differences between hashing and encryption.
+
+## unix password management
+
+
+* **/etc/passwd** file: it is used by applications for authentication and validation purposes. It is purposely created as world-readable. but it also opens the door to attacks on the file.
+    * The format of the stored information is straightforward. It contains a total **of seven fields**, **each separated by :** and **contains the following entries**: 
+    1. **username**: it is used when the user logs in. It should be between 1 and 32 characters in length.
+    1. **password**: an x character indicates that this is a placeholder for the encrypted password which is actually stored in /**etc/shadow file**.
+    1. **user id (UID)**: **Each user must be assigned a user ID (UID)**. **UID 0 (zero) is reserved for root and UIDs 1-99 are reserved for other predefined accounts**. **UID 100-999 are reserved by the system for administrative and system accounts/groups**.
+    1. **group id (GID)**: the primary group ID the user account is associated with. Group details are stored in **/etc/group** file.
+    1. **user id description/comment**: this field can be used to store extra details about the user account such as a user’s full name, phone number, etc. 
+    1. **user's home directory**: The absolute path to the directory the user will be in when they log into the system or launch the terminal.
+    1. **user's login shell**: The absolute path of a command or shell or the first command to run upon login. 
+
+* **/etc/shadow file**: it is a file readable only **by the root account**, therefore possesses less security risk than the /etc/passwd file. In it, it is stored actual passwords in an encrypted format for each use account listed in the /etc/passwd file in a similar format.
+    1. **username**: Specifies the username that must also be present in the /etc/passwd file.
+    1. **password**: This contains the encrypted password and this in-turn follows a specific format such as **$id$salt$hashed**
+        * $id is the algorithm used for encryption and can be one of the options:
+            * $1$ is MD5
+            * $2a$ is Blowfish
+            * $2y$ is Blowfish
+            * $5$ is SHA-256
+            * $6$ is SHA-512
+    1. **last password change**: This represents the days since Jan 1, 1970 that password was last changed. This date is the first counting date on Unix operating systems.
+    1. **minimum password age**:The number of days before the password may be changed. 0 indicates it may be changed at any time.
+    1. **maximum days**: This represents the maximum number of days the password remains valid. 99999 indicates that the user can keep the password unchanged for many years.
+    1. **password change warning period**: This represents the number of days before password expiry that the user is warned they will need to change it.
+
+**To think about**: Pass is a simples password manager for the command line, which stores passwords inside of a GPG encrypted file. Manage passwords tools are important **to manage passwords across multiple services**, **store passwords securely**, **and configure password restriction policies**. One of the important use-cases of password **management tools** is that they **allow us to define strict password rules which enforce certain sets of standard features that a strong password must possess**. These features ensure that the password is strong enough and that it is not a common string that can be easily guessed such as: **Minimum of 8 characters in the password string**, It should contain characters from the four primary categories: **uppercase letters, lowercase letters, numbers, and characters**, **Should not be a common string like your name, city of birth, or date of birth which can all be easily guessed by attackers**, **It should be different from your previously used passwords on the same service**, **There should be a password rotation policy which should either automatically expire the password after certain days or remind the user to change the password once the threshold is reached**.
+
+### remote access management
+
+SSH is a common way to securely access remote Linux servers. It is **a cryptographic network protocol** used to securely log onto remote systems. It follows the client-server architecture where an SSH client connects with a server running the SSH server service and listening for connections. By default, the SSH server listens for connections **on port 22**. **The other important use-case of SSH is to securely transfer the file over an encrypted tunnel**.
+
+**Risks associated with SSH service**: One of the biggest risks associated **with SSH is that of stolen credentials**. With access to the credentials of a system administrator, **the attacker can become virtually invisible in the network**. 
+SSH **not only helps** securely transfer files over the internet, it also helps execute system commands **and helps** you **move from one machine within the network to another**. **This allows the attackers to laterally move into the network while remaining completely undetected by simply using the available tools on the system**. 
+**This requires no specialized malware or spyware to perform these activities**. **This is referred to as living off the land, a technique used by advanced attackers to silently move inside the compromised network by using system tools**. 
+Attackers inside the network can also abuse the SSH protocol to exfiltrate data. Most organizations permit **outbound SSH access through their firewall which makes it easy for attackers already inside the network to establish a reverse-tunnel and exfiltrate the data out**. A point to note here **is that the attackers also do not need any special tooling in this case**. **SSH is set up on almost all Linux servers or, at least, it is incredibly easy to set up without alerting the intrusion detection and protection services**. The **SSH service is often running on heavily insecure devices in a network like a jump host or a CCTV camera**. These insecure devices are a prime target of attackers as it gives them an easy way into the corporate network. Usually, these devices are configured with default credentials by external vendors and contractors which leaves the gates open for exploitation of the wider network.
+
+**living off the land attack (LotL)**: it refers to an attack technique that utilizes tools or features that already exist in the target environment. It allows the attackers to stay under the radar without alerting any intrusion detection services in place. Since system services and tools are whitelisted across the organization, it makes it easy for attackers to use those tools to move laterally in the network thus eliminating the need for downloading their own remote administration tools
+
+**To think about**: A typical attack on an SSH server accessible over the internet would look like:
+    * Attackers use automated scripts and bots to scan the internet and identify IP addresses that have port 22 open.
+    * Once the IP address is located, the bot attempts to brute force the combination of multiple usernames and passwords which are commonly used.
+    * if successful, the username-password combination is reported back to the attacker which they can use to make unauthorized access to the system.
+
+#### Hardening SSH
+
+Securing remote access services requires system-level as well as network-level security. We can harden the system-level implementation of the application to ensure that it is prevented against attacks as well as minimize the blast radius by ensuring that only required permissions are granted to such remote services. Some of the steps that we can take to harden an SSH server would include: 
+    1. ssh config: /etc/ssh/ssd_config
+    1. One of the essential steps for securing an SSH server is to disable root login. sudo can be used as a mode for users if they require higher permissions to execute a task. (PermitRootLogin no)
+    1. Define a list of permitted users. By doing this, you ensure that any other user is not able to log into the server even if it belongs to the same access group as other users in the list.
+    1. Changing the default port of the SSH service. This can help deflect automated bots and scanners who are looking for open port 22 randomly on the internet to brute force login credentials. (Port 2323)
+    1. Configuring SSH keys for login instead of passwords can make it even more difficult for attackers to brute force login credentials. You can disable password-based access and instead generate public keys on the client machines and add them to the server.
+    1. Using multi-factor authentication (MFA) can be another way of further securing the client-server authentication. This may require using additional tools and libraries but they can be easily integrated with the ssh server to validate the end-users through MFA.
+        1. MaxAuthTries = 3
+        1. AllowUsers root, test321
+        1. DenyUsers audacity, test321
+        1. Match Address 192.168.1.0/24
+        1. PermitRootLogin yes
+
+## encryption, securing data at rest
+
+**Systems and servers store critical data that needs to be frequently accessed, either locally or over the network**. **To protect this rest data on the system, encryption comes into picture**. **Data at rest encryption ensures** that files are always **stored on disk in an encrypted form**. The files only become available to the operating system and applications in a readable form while the system is running and unlocked by a trusted user. Encrypting data at rest is vital for regulatory compliance to ensure that sensitive data saved on disks is not readable by any user or application without a valid key.
+
+Implementing encryption:
+
+1. Directory Level Encryption (DLE): As the name suggests, directory Level encryption applies to directories as a container. Access to files inside the directory would require the use of encryption keys. This approach can also be used to segregate data of identical sensitivity but requires multiple encryption keys for different directories based on content type or access groups. 
+1. File Level Encryption (FLE): This is the lowest level of abstraction where individual files are encrypted instead of the entire disk or directory. This is again done to protect data of varying sensitivity on the same system.
+1. Full Disk Encryption (FDE): Full disk encryption works by encrypting a system's entire hard drive. This not only includes the data stored on it, but also the operating system files. An encryption key or passphrase is used during system boot which begins the decryption process.
+
+## Authorization
+
+Authorization is a way to move a step ahead of authentication to further implement granular security controls.
+
+* **Linux Groups**: they are nothing but **a collection of similar users under a single umbrella**. **Restrictions or permissions applied to the group is inherited by its users**. The list of available groups on the system can be determined by looking inside **etc/group/** file. Command group to figure out individual group properties.
+* **Linux Users**: **Linux being a multi-user system, it can be used to create users in order to define the access levels and permission boundaries**. There can be two types of users: **system users and regular users**. 
+    * **System users are able to run non-interactive or background processes on a system with lesser privileges**. These users are created without the home directory and are mostly used to control installed software. 
+    * **Regular users** are the user accounts who can perform logging in through the linux UI and have a home directory associated with the account. They have full access to their home directory and may or may not have access outside it. 
+To view the currently logged in user, we can use the **whoami** command while, to list all users associated with the system, we can peek into the **/etc/passwd file**.
+
+### access control
+
+/etc/sudoers file registers the superusers on the system. If the normal system user is an allowed user in a file called /etc/sudoers, they can execute the command at the higher privilege. This file can also be used to define the commands which a user can execute with sudo. This is a classic example of implementing the Principle of Least Privilege (PoLP) which we discussed an earlier lesson.
+
+**Defining Permissions** *root ALL=(ALL:ALL) ALL* line specifies that the root user has complete privilege and can run any command on the system. We can similarly define permissions for other users here. In *%admin ALL=(ALL) ALL * line the % sign specifies a group. This line states that anyone in the admin group has the same privileges as a root user. The permissions for any other groups on the system can be respectively defined here. *%sudo ALL=(ALL:ALL) ALL* line specifies that all users in the sudo group have the privileges to run any command. The difference between this line and the one above is the extra AND in (ALL:ALL) which is used to specifiy the command level access to the group. ALL can be replaced by a specific set of commands which can be allowed for the sudo group.
+
+### Regularly Monitoring for User Accounts and Access Levels
+
+Creating user accounts for various tasks is easy but often those accounts are not deleted once they are no longer needed.
+* **Controlling Accounts Through Password Rotation**. This technique also helps to remove stale accounts if no one updates their password after a certain number of days.
+* **Implementing the Principle of Least Privilege**. This goes back to our first lesson where we talked about the benefit of only providing the amount of access to a user which is required for day to day work.
+* **Eliminating Shared Account Usage**. Sharing of account credentials is a bad practice, especially when there is no control over who uses the credentials.
+* **Controlling Account and Group Access**. This has been the focus in the last few lessons where we discussed controlling access to filesystem and privileges on the system. This step is essential and a vital piece in maintaining effective security hygiene.
+* **Manage and Record Privileged Activity**. Keeping a trail of all the privileged activities on the system not only helps with creating detection techniques, it also helps identify the type of usage in case of a security incident. It helps connect the dots in order to figure out the infection chain.
+
+**To think about**: You have an Apache Web server running on a Linux server. What type of access control policies can you define to ensure the web server is secure and that a compromise on the server doesn't lead to an overall system takeover? There are quite a few answers to this question. Below are are some of the best practices which can be implemented at the user access level: Ensure that the system has a separate user account which is a delegated manager of Apache web server and its related files. The associated password for the Apache user should have rotation policies in place. If the Apache web server has a public facing web page, ensure that the process is running at a lower privilege so that any compromise to the server would not result into complete server takeover. Implement logging and management to ensure that there is detection and monitoring in place.
+
+What is the principle of least privilege and what security measures does it provide? Least privilege is the idea of restricting the access rights of users, accounts, and processes to only those resources that are mandatory for them to perform their regular tasks or duties. While the concept sounds easy to understand, it can be incredibly challenging to implement it in an enterprise environment.
+
+Useful commands:
+* useradd app-admin
+* usermod -aG sudo app-admin
+* passwd app-admin 
+* groupadd apache-admin
+* usermod -g apache-admin app-admin
+* deluser app-admin sudo
+
+### Ownership & Permissions
+
+File permissions can be changed using **the chmod command**. The user executing the change should have the right to run the command. chmod has a simple format. It takes in the required permission and the filename as the parameters. Permissions can be assigned using + and can be removed using the - symbol. Also, we can use the terms u, g, and o to assign permissions to a user, a group, and others respectively.
+
+### Changing File Ownership
+
+Similar to file permissions, we can also change its ownership using the chown command. In Linux, all files are associated with an owner and a group and then assigned permission access rights for the file owner, the group members, and others. chown USER:GROUP FILE
+
+### Unauthorized Processes
+
+Limiting Network Exposure by Eliminating Unnecessary Services: When we run certain services that require network access, like SSH, these services bind themselves to specific ports and listen for connection. There are two important points to note here: The running process. The socket connection launched by the service.
+
+Linux contains an inbuilt command called **netstat** which is can be seen as a swiss army knife for performing socket-level diagnosis on the system. **netstat is a command-line tool for monitoring network connections, incoming and outgoing**.
+
+Netstat -a
+netstat – antp [last column shows the process ID and the process name which is associated with the listening port.] [The -t command shows only the TCP protocol connections whereas the -p option lists the associated process IDs]
+
+ps -aux | grep [process name or process id] [to determine mode details about the process by using the ps command]
+kill -9 PID
+
+## authorization with NAC (Network Access Control)
+
+NAC can also prevent **unauthorized access to data both internally as well as externally**. Insider threats are a real problem that every organization has to deal with. Many organizations spend a lot of time securing their network perimeter **from outside access and pay little attention to internal access**. As a security engineer, **it is equally important to implement strong network level access controls from internal employees as well as from external users.** **Users should only be allowed to access the services and data which they are allowed to**.
+
+Utilizing iptable Rules for Restricting Access: there are four tables present in iptables:
+1. Filter table: this is the most widely used table and is used for normal filtering of the incoming and outgoing packets based on the defined rules.
+1. NAT Table: This table is mainly used for defining the Network Addess Translation purposes in the network
+1. Mangle Table: is for specialized packet alteration. This alters QOS bits in the TCP header.
+1. Raw Table: allows you to work with packets before the kernel starts tracking its state.
+
+**To think about**:
+
+* **Network Address Translation (NAT)** is a process in which one or more local IP addresses is translated into one or more Global IP addresses and vice versa in order to provide Internet access to the local hosts.
+* **Stateless firewalls **watch network traffic and restrict or block packets based on source and destination addresses or other static values. Such firewalls are not aware of traffic patterns or data flow happening in the network. A stateless firewall uses simple rule-sets on the network traffic to determine a match.
+* **Stateful firewalls **are capable of monitoring all aspects of network traffic, including their communication channels and characteristics. They are also referred to as dynamic pocket filters as they filter traffic packets based on the context and state. 
