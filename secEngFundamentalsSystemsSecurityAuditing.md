@@ -1,0 +1,72 @@
+# Security Engineer
+
+## Auditing
+
+Cyberattacks leave a trail on the affected systems. How to locate those infections trails and build a complete image of the infection along with a timeline of events.
+
+
+### Application & Services Logging
+
+**Logs give you a visual history of everything that has been happening in the application or the OS**. Logs store important information about various interactions, errors, and events in a logical and time-tagged manner. They might also store information about who’s trying to access your system, what a specific service is doing, or about a system crash that happened earlier. This is why knowing how to locate and parse log files is definitely a skill that you have to master if you want to investigate or locate security incidents in the system or network.
+
+#### Logging basics in Linux
+
+Linux provides a centralized repository of log files for both kernel and system-level logging. This repository can be located under **the /var/log directory**.
+
+The log files generated in a Linux environment can typically be classified into four different categories:
+    * application logs: These are application-specific logs. For example, logs for an Apache web server.
+    * event logs: These logs are a capture of all the events and system calls occurring in the operating system. In Linux, these logs are captured by syslog.
+    * service logs: These logs can be used to monitor services running on the operating system.
+    * system logs: These logs are specific to system issues and related events.
+
+**Important Log Files For Security Engineers is /var/log/dmesg**
+This log file contains kernel ring buffer information. It contains all the logs which are displayed when a system boots up. This log file might not be of frequent use for security research but it is useful to know about the presence of this file if you are troubleshooting boot level issues.
+
+**/var/log/auth.log**
+This log file contains system authorization information, including user logins and the authentication mechanism that was used. This log file can help us monitoring security events like failed login attempts, brute-force attacks, and other vulnerabilities related to user authorization.
+
+**/var/log/cron.log**
+Cron job log files are another critical resource for a security engineer in order to build monitoring and detection for jobs that are executed at periodic intervals. Malware and spyware programs try to run themselves as cron jobs in order to maintain persistence on the system. A point to note here is that, on Ubuntu Linux, cron logs are written to the syslog file. We can configure it to also write it to cron.log file as a more streamlined way of collecting logs. In short, if the cron.log file doesn't exist then your cron logs are getting written only to syslog. We can grep the syslog file and gather the cron logs collected by the daemon. You should try this in the workspace provided below. 
+The log lines tell us the timestamps of execution followed by the user (root) and the execution process.
+
+### Apache & Nginx Web Server Logs
+
+**Web server logs are important for investigating compromises on a web server**. They can provide vital information on any web-based attacks carried out on the server. Depending on the application used (Like Apache or Nginx), you can find the access and error logs in **/var/log/[application-name]/ directory**.
+
+### Package Related Logs
+
+We continuously install packages and libraries on Linux systems to perform day to day tasks. A lot of times, malware, spyware, and other malicious programs can also try and install certain packages on the system in order to activate their specific features. For example, a cryptocurrency mining malware will have to download packages to perform the CPU mining operation.
+
+Some of the important log files that capture this information can be:
+    * /var/log/dpkg.log 
+    * /var/log/apt/history.log 
+    * /var/log/yum.log
+
+### Host-based intrusion detection systems (HIDS)
+
+**HIDS collect, analyze, and correlate logs and alerts if an attack, fraudulent use, or error is detected**. HIDS enables you to monitor processes and applications running on devices like servers and workstations. It can correlate system logs and events to alert for changes made to critical settings and system configuration, unauthorized or anomalous activity, unusual user behavior, etc. HIDS technologies are "passive" in nature, meaning their purpose is to identify suspicious activity, not prevent it.
+
+HIDS can either monitor a single host or it can be configured to monitor a fleet of devices in the network. In such cases, a log collector agent can push all the logs and events from the devices to a centrally managed HIDS where we can build out our correlations and alerting. As a security engineer, you can configure the HIDS by creating detection and alerting rules, dashboards, and other interactive components that can be monitored for security events and warnings. Not all warnings would result in a security investigation and might result in some false alarms but they are still vital in keeping an eye out for possible breach attempts on the systems deployed in the organization. Some of the alerting that we can build in a HIDS can include but not limited to:
+
+    * Unauthorized Login and Access Attempts
+    * Gather Events from Other Security Tools like Firewalls, Antivirus Software, and Auditing Tools
+    * Modification or Access of Critical Files
+    * Installation of Unwanted or Unauthorized Applications
+
+#### OSSEC
+
+OSSEC is a free, open-source host-based intrusion detection system (HIDS) that has the capability to correlate and process logs from a variety of operating systems and security tools for alerting on possible security incidents. This makes it an ideal choice for an HIDS both to monitor a single or endpoint or a range of devices distributed in a network.
+
+#### Building Audit Controls: Moving Beyond Logs
+
+We need additional auditing capabilities that can complement the log monitoring service with advanced capabilities like querying for data and reporting state changes. Audit controls can be used to raise the level of security in Linux systems, and although they doesn’t offer additional security, they can be extremely useful in retrieving detailed information about system events.
+
+Process Auditing Through System Commands. An easy way to track a process and its origin is through the pstree command. Every process in a system has a parent (except for the first process(. A parent process can reveal a lot of information about the nature of a child process. For example, if the parent process is Firefox and the user visited a web page serving a Java exploit, the Firefox process will have a child Java process. This would further spin up a malicious process to infect the system. This is what the entire process tree would look like. Thepstree command can be used to turn the running processes into a tree structure, making it easy to interpret.
+
+**Osquery** is a specialized tool that aggregates operating system's events and actions into a relational database. You can query the database and get system information that would otherwise require multiple commands to execute. It was developed to be a tool for generating operating system related analytics and monitoring performance. Soon, it found its way into security use-cases and now it is one of the most widely used tools for security monitoring, auditing, and compliance reporting. Osquery can either be configured to run as a daemon on a single server and record all its changes or it can be deployed on all the assets in an organization. The logs can be collected in a centralized server which can be used by the system administrators and security engineers to query for reports. Osquery supports all major operating systems.
+
+**File Integrity Monitoring**: File Integrity monitoring (FIM) is an auditing capability that enables you to monitor your critical files for changes. Through FIM, we can monitor for file access, content update, copying and moving actions, as well as files being created on the system.
+FIM Using Osquery
+
+We used Osquery to gather auditing information about the operating system. We can extend Osquery to also monitor for FIM changes occurring on the system. Osquery can monitor and detects any changes of files on the defined directory using the file_path parameter. It stores all activity to the file_events table. To define the paths and directories in the FIM config file, we can use SQL style wildcards: %.
+
